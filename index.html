@@ -1,0 +1,273 @@
+import React, { useState, useMemo } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+
+const GlobalPopulationHistory = () => {
+  const [selectedPeriod, setSelectedPeriod] = useState('all');
+  const [showEvents, setShowEvents] = useState(true);
+
+  // 历史人口数据（单位：百万）
+  const populationData = [
+    { year: -10000, population: 4, era: '旧石器时代晚期' },
+    { year: -8000, population: 5, era: '新石器革命开始' },
+    { year: -5000, population: 15, era: '农业社会发展' },
+    { year: -3000, population: 50, era: '青铜时代' },
+    { year: -1000, population: 100, era: '铁器时代' },
+    { year: 0, population: 200, era: '公元元年' },
+    { year: 200, population: 257, era: '罗马帝国鼎盛' },
+    { year: 400, population: 206, era: '罗马帝国衰落' },
+    { year: 600, population: 208, era: '中世纪早期' },
+    { year: 800, population: 224, era: '查理曼帝国' },
+    { year: 1000, population: 295, era: '中世纪' },
+    { year: 1200, population: 393, era: '十字军东征时期' },
+    { year: 1300, population: 400, era: '蒙古帝国后期' },
+    { year: 1400, population: 350, era: '黑死病后' },
+    { year: 1500, population: 461, era: '文艺复兴' },
+    { year: 1600, population: 556, era: '大航海时代' },
+    { year: 1700, population: 603, era: '启蒙时代' },
+    { year: 1750, population: 791, era: '工业革命前夜' },
+    { year: 1800, population: 978, era: '工业革命' },
+    { year: 1850, population: 1262, era: '工业化加速' },
+    { year: 1900, population: 1650, era: '第二次工业革命' },
+    { year: 1920, population: 1860, era: '一战后' },
+    { year: 1940, population: 2300, era: '二战期间' },
+    { year: 1950, population: 2556, era: '二战后重建' },
+    { year: 1960, population: 3039, era: '婴儿潮' },
+    { year: 1970, population: 3708, era: '绿色革命' },
+    { year: 1980, population: 4458, era: '现代医学发展' },
+    { year: 1990, population: 5327, era: '全球化开始' },
+    { year: 2000, population: 6127, era: '新千年' },
+    { year: 2010, population: 6958, era: '互联网时代' },
+    { year: 2020, population: 7795, era: '新冠疫情' },
+    { year: 2024, population: 8100, era: '当前' }
+  ];
+
+  // 重大历史事件
+  const historicalEvents = [
+    { year: -8000, event: '农业革命', impact: '人口增长加速' },
+    { year: 1347, event: '黑死病', impact: '欧洲人口锐减1/3' },
+    { year: 1492, event: '哥伦布到达美洲', impact: '美洲原住民人口大减' },
+    { year: 1760, event: '工业革命', impact: '人口爆炸性增长开始' },
+    { year: 1918, event: '西班牙流感', impact: '全球死亡5000万-1亿' },
+    { year: 1945, event: '二战结束', impact: '婴儿潮开始' },
+    { year: 1960, event: '绿色革命', impact: '农业产量大增' },
+    { year: 2020, event: '新冠疫情', impact: '人口增长放缓' }
+  ];
+
+  // 根据选择的时期过滤数据
+  const filteredData = useMemo(() => {
+    switch(selectedPeriod) {
+      case 'ancient':
+        return populationData.filter(d => d.year <= 1000);
+      case 'medieval':
+        return populationData.filter(d => d.year >= 1000 && d.year <= 1500);
+      case 'modern':
+        return populationData.filter(d => d.year >= 1500 && d.year <= 1900);
+      case 'contemporary':
+        return populationData.filter(d => d.year >= 1900);
+      default:
+        return populationData;
+    }
+  }, [selectedPeriod]);
+
+  // 自定义tooltip
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const year = label < 0 ? `公元前${Math.abs(label)}年` : `公元${label}年`;
+      
+      return (
+        <div className="bg-white p-3 border border-gray-300 rounded shadow-lg">
+          <p className="font-semibold text-gray-800">{year}</p>
+          <p className="text-blue-600">人口: {payload[0].value.toLocaleString()} 百万</p>
+          <p className="text-sm text-gray-600">{data.era}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // 计算增长率
+  const calculateGrowthRate = (data) => {
+    const growthRates = [];
+    for (let i = 1; i < data.length; i++) {
+      const prev = data[i-1];
+      const curr = data[i];
+      const years = curr.year - prev.year;
+      const rate = ((curr.population / prev.population) ** (1 / years) - 1) * 100;
+      growthRates.push({
+        period: `${prev.year < 0 ? `公元前${Math.abs(prev.year)}` : prev.year}-${curr.year < 0 ? `公元前${Math.abs(curr.year)}` : curr.year}`,
+        rate: rate.toFixed(3)
+      });
+    }
+    return growthRates;
+  };
+
+  const recentGrowthRates = calculateGrowthRate(populationData.slice(-6));
+
+  return (
+    <div className="w-full max-w-7xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+      <div className="bg-white rounded-lg shadow-xl p-6">
+        <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">
+          全球人口历史变化模型
+        </h1>
+        <p className="text-center text-gray-600 mb-6">
+          从公元前10000年至今的人类人口演变轨迹
+        </p>
+
+        {/* 控制面板 */}
+        <div className="flex flex-wrap gap-4 mb-6 justify-center">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSelectedPeriod('all')}
+              className={`px-4 py-2 rounded ${selectedPeriod === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+            >
+              全部历史
+            </button>
+            <button
+              onClick={() => setSelectedPeriod('ancient')}
+              className={`px-4 py-2 rounded ${selectedPeriod === 'ancient' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+            >
+              古代（前10000-1000年）
+            </button>
+            <button
+              onClick={() => setSelectedPeriod('medieval')}
+              className={`px-4 py-2 rounded ${selectedPeriod === 'medieval' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+            >
+              中世纪（1000-1500年）
+            </button>
+            <button
+              onClick={() => setSelectedPeriod('modern')}
+              className={`px-4 py-2 rounded ${selectedPeriod === 'modern' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+            >
+              近代（1500-1900年）
+            </button>
+            <button
+              onClick={() => setSelectedPeriod('contemporary')}
+              className={`px-4 py-2 rounded ${selectedPeriod === 'contemporary' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+            >
+              现代（1900年至今）
+            </button>
+          </div>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={showEvents}
+              onChange={(e) => setShowEvents(e.target.checked)}
+              className="mr-2"
+            />
+            显示重大历史事件
+          </label>
+        </div>
+
+        {/* 主图表 */}
+        <div className="h-96 mb-8">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={filteredData} margin={{ top: 20, right: 30, left: 60, bottom: 60 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="year"
+                type="number"
+                scale="linear"
+                domain={['dataMin', 'dataMax']}
+                tickFormatter={(value) => value < 0 ? `前${Math.abs(value)}` : `${value}`}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis 
+                label={{ value: '人口（百万）', angle: -90, position: 'insideLeft' }}
+                tickFormatter={(value) => `${value.toLocaleString()}`}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              
+              {/* 重大事件标记线 */}
+              {showEvents && historicalEvents.map((event, index) => (
+                <ReferenceLine 
+                  key={index}
+                  x={event.year} 
+                  stroke="#ff6b6b" 
+                  strokeDasharray="5 5"
+                  label={{ value: event.event, position: 'topLeft' }}
+                />
+              ))}
+              
+              <Line
+                type="monotone"
+                dataKey="population"
+                stroke="#2563eb"
+                strokeWidth={3}
+                dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, stroke: '#2563eb', strokeWidth: 2 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* 关键时期分析 */}
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold mb-3 text-blue-800">人口增长的转折点</h3>
+            <div className="space-y-2 text-sm">
+              <div><strong>农业革命（公元前8000年）：</strong>从狩猎采集转向农业，人口开始稳定增长</div>
+              <div><strong>工业革命（1760年）：</strong>医学进步和生活条件改善，人口爆炸性增长</div>
+              <div><strong>现代医学革命（1900年后）：</strong>抗生素和疫苗的发明，死亡率大幅下降</div>
+              <div><strong>绿色革命（1960年代）：</strong>农业产量大增，支撑更多人口</div>
+            </div>
+          </div>
+
+          <div className="bg-red-50 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold mb-3 text-red-800">人口下降的危机</h3>
+            <div className="space-y-2 text-sm">
+              <div><strong>黑死病（1347-1351）：</strong>欧洲人口减少30-60%</div>
+              <div><strong>美洲瘟疫（1492后）：</strong>原住民人口减少90%</div>
+              <div><strong>西班牙流感（1918-1919）：</strong>全球死亡5000万-1亿人</div>
+              <div><strong>两次世界大战：</strong>直接和间接导致上亿人死亡</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 近期增长率表 */}
+        <div className="bg-gray-50 p-4 rounded-lg mb-6">
+          <h3 className="text-lg font-semibold mb-3">近期人口年增长率</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+            {recentGrowthRates.map((rate, index) => (
+              <div key={index} className="bg-white p-2 rounded border">
+                <div className="font-medium">{rate.period}</div>
+                <div className="text-blue-600">{rate.rate}% / 年</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 重大历史事件详情 */}
+        {showEvents && (
+          <div className="bg-yellow-50 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold mb-3 text-yellow-800">重大历史事件对人口的影响</h3>
+            <div className="grid md:grid-cols-2 gap-4 text-sm">
+              {historicalEvents.map((event, index) => (
+                <div key={index} className="bg-white p-3 rounded border-l-4 border-yellow-500">
+                  <div className="font-medium">
+                    {event.year < 0 ? `公元前${Math.abs(event.year)}年` : `公元${event.year}年`}
+                  </div>
+                  <div className="text-gray-700">{event.event}</div>
+                  <div className="text-gray-600 text-xs mt-1">{event.impact}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 数据说明 */}
+        <div className="mt-6 text-xs text-gray-500 bg-gray-100 p-3 rounded">
+          <p><strong>数据说明：</strong></p>
+          <p>• 公元前10000年以前的数据为考古学和人类学估算</p>
+          <p>• 公元前5000年至公元1500年的数据基于历史记录和人口学模型推算</p>
+          <p>• 1800年以后的数据相对准确，基于各国人口普查和统计</p>
+          <p>• 人口单位为百万人，纵轴采用线性刻度以更好显示指数增长特征</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GlobalPopulationHistory;
